@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "description": "Q-style promise support for Mongoose",
   "main": "index.js",
-  "dependencies": {},
+  "dependencies": {
+    "mongoose": "~3.8.0",
+    "q": "~0.9.7"
+  },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
