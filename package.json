@@ -1,0 +1,28 @@
+{
+  "name": "monqoose",
+  "version": "0.0.0",
+  "description": "Q-style promise support for Mongoose",
+  "main": "index.js",
+  "dependencies": {
+    "mongoose": "~3.8.0",
+    "q": "~0.9.7"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/bzwheeler/monqoose.git"
+  },
+  "keywords": [
+    "q",
+    "mongoose",
+    "promises"
+  ],
+  "author": "bzwheeler",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/bzwheeler/monqoose/issues"
+  }
+}
