@@ -1,22 +1,59 @@
 Mongoose = require 'mongoose'
 Q        = require 'q'
 
-exec = Mongoose.Query.prototype.exec
-pre  = Mongoose.Document.prototype.pre
-hook = Mongoose.Document.prototype.hook
-post = Mongoose.Document.prototype.post
-
-Mongoose.Query.prototype.exec = () ->
+qHandler = () ->
   deferred = Q.defer()
+  handler  = (err, result...) ->
+    if err
+      deferred.reject err
+    else if result.length == 1
+      deferred.resolve result[0]
+    else
+      deferred.resolve result
 
-  exec.call @, (err, result) ->
-    if err then deferred.reject(err) else deferred.resolve(result)
+  return {
+    promise : deferred.promise
+    handler : handler
+  }
+
+saveWrapper = (fnName) ->
+  fn = Mongoose.Document.prototype[fnName]
+  return (name, args...) ->
+    if (name == 'save')
+      name = '_original_save'
+
+    args.unshift(name)
+    fn.apply(@, args)
+
+create = Mongoose.Model.create
+Mongoose.Model.create = (args...) ->
+  if typeof args[args.length - 1] == 'function'
+    return create.apply @, args
+
+  {promise, handler} = qHandler()
+
+  args.push handler
+  create.apply @, args
+
+  return promise
+
+exec = Mongoose.Query.prototype.exec
+Mongoose.Query.prototype.exec = (fn) ->
+  return exec.call(@, fn) if fn
+
+  {promise, handler} = qHandler()
+
+  exec.call @, handler
   
-  return deferred.promise
+  return promise
 
 Mongoose.Document.prototype._original_save = Mongoose.Model.prototype.save
+Mongoose.Document.prototype.pre  = Mongoose.Document.pre  = saveWrapper('pre')
+Mongoose.Document.prototype.post = Mongoose.Document.post = saveWrapper('post')
+Mongoose.Document.prototype.hook = Mongoose.Document.hook = saveWrapper('hook')
+Mongoose.Model.prototype.save = (fn) ->
+  return @_original_save(fn) if fn
 
-Mongoose.Model.prototype.save = () ->
   deferred = Q.defer()
 
   @_original_save (err, doc, found) ->
@@ -28,26 +65,5 @@ Mongoose.Model.prototype.save = () ->
       deferred.resolve doc
   
   return deferred.promise
-
-Mongoose.Document.prototype.pre = Mongoose.Document.pre = (name, args...) ->
-  if (name == 'save')
-    name = '_original_save'
-
-  args.unshift(name)
-  pre.apply(@, args)
-
-Mongoose.Document.prototype.post = Mongoose.Document.post = (name, args...) ->
-  if (name == 'save')
-    name = '_original_save'
-
-  args.unshift(name)
-  post.apply(@, args)
-
-Mongoose.Document.prototype.hook = Mongoose.Document.hook = (name, args...) ->
-  if (name == 'save')
-    name = '_original_save'
-
-  args.unshift(name)
-  hook.apply(@, args)
 
 module.exports = Mongoose
